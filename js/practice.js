@@ -2,7 +2,7 @@
 
 import * as db from './db.js';
 import { escapeHtml as e, richText, plainText, originSummary, originSpoken } from './util.js';
-import { speak, stopSpeaking, speechSupported } from './speech.js';
+import { speak, stopSpeaking, speechSupported, accentStatus } from './speech.js';
 import { isCorrect, alignSpelling, recordAttempt, recordRun, isTricky, RETEST_TARGET } from './progress.js';
 import { toast, onLeave, playSound } from './ui.js';
 import { fillGaps, hasGaps } from './lookup.js';
@@ -195,7 +195,11 @@ function showWord(first = false) {
     </div>
     ${s.timerOn ? `<div class="timer"><div class="timer-fill"></div><span class="timer-text"></span></div>` : ''}
     <div class="card ask-card">
-      <button class="btn primary hear" id="hear">🔊 Say the word</button>
+      <div class="hear-row">
+        <button class="btn primary hear" id="hear">🔊 Say the word</button>
+        <button class="btn slow" id="slow" title="Say it slowly">🐢 Slowly</button>
+      </div>
+      <div id="voice-warn"></div>
       <p class="muted small" style="text-align:center;margin:10px 0 6px">Ask the judge:</p>
       <div class="ask-grid">
         <button class="btn quiet" data-ask="definition" ${w.definition ? '' : 'disabled'}>📖 Definition</button>
@@ -216,6 +220,17 @@ function showWord(first = false) {
   const input = app.querySelector('#answer');
   const sayWord = () => { speak(w.word, s); said.innerHTML = '<span class="muted">🔊 Listen…</span>'; };
   app.querySelector('#hear').onclick = () => { sayWord(); input.focus(); };
+  app.querySelector('#slow').onclick = () => { speak(w.word, s, { rate: 0.6 }); input.focus(); };
+  accentStatus(s.accent).then(st => {
+    if (st.ok) return;
+    const name = s.accent === 'en-GB' ? 'British' : 'American';
+    const region = s.accent === 'en-GB' ? 'United Kingdom' : 'United States';
+    app.querySelector('#voice-warn').innerHTML = `<div class="warn small" style="text-align:left;margin-top:10px">
+      ${st.needsInternet ? `The ${name} voice on this device only works online, so words will sound different until you're back online.`
+        : `No ${name} voice is installed on this device, so another accent is being used.`}
+      To get one that works offline: <b>Windows</b>: Settings → Time &amp; language → Speech → Add voices → English (${region}).
+      <b>Android</b>: Settings → Text-to-speech → Google → Install voice data → English (${region}).</div>`;
+  });
   app.querySelectorAll('[data-ask]').forEach(b => b.onclick = () => {
     const kind = b.dataset.ask;
     if (kind === 'definition') { said.innerHTML = `<b>📖 Definition:</b> ${richText(w.definition)}`; speak(plainText(w.definition), s); }

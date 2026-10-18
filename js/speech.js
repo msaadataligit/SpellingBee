@@ -31,8 +31,15 @@ function score(v) {
   return s;
 }
 
+// Voices that work right now. Online voices (e.g. Chrome's "Google UK English") need internet;
+// without it Chrome silently switches to another voice, often an American one.
+async function usableVoices(accent) {
+  const list = await voicesFor(accent);
+  return navigator.onLine ? list : list.filter(v => v.localService);
+}
+
 export async function pickVoice(settings) {
-  const list = await voicesFor(settings.accent);
+  const list = await usableVoices(settings.accent);
   if (settings.voiceName) {
     const chosen = list.find(v => v.name === settings.voiceName);
     if (chosen) return chosen;
@@ -40,10 +47,23 @@ export async function pickVoice(settings) {
   return list.sort((a, b) => score(b) - score(a))[0] || null;
 }
 
+// { ok, offlineOnly } — ok is false when no voice for this accent can be used right now.
+export async function accentStatus(accent) {
+  const all = await voicesFor(accent);
+  const now = await usableVoices(accent);
+  return { ok: now.length > 0, needsInternet: all.length > 0 && !all.some(v => v.localService) };
+}
+
+const pause = ms => new Promise(r => setTimeout(r, ms));
+
 export async function speak(text, settings, { rate } = {}) {
   if (!speechSupported || !text) return;
-  synth.cancel();
-  const u = new SpeechSynthesisUtterance(text);
+  // Starting new speech straight after cancel() can clip the first or last sound in Chrome.
+  if (synth.speaking || synth.pending) { synth.cancel(); await pause(150); }
+  // A short word on its own can lose its final consonant ("flight" -> "fly"); ending the
+  // sentence gives the voice a natural stop.
+  const spoken = /[.!?]$/.test(text.trim()) ? text : text.trim() + '.';
+  const u = new SpeechSynthesisUtterance(spoken);
   const v = await pickVoice(settings);
   if (v) u.voice = v;
   u.lang = v ? v.lang : settings.accent;

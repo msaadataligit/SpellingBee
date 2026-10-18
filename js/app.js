@@ -355,7 +355,7 @@ async function settingsScreen() {
       </div>
       ${voices.length > 1 ? `<label class="field setting"><span>Voice</span><select id="voice">
         <option value="">Best available</option>
-        ${voices.map(v => `<option value="${e(v.name)}" ${v.name === settings.voiceName ? 'selected' : ''}>${e(v.name)}</option>`).join('')}
+        ${voices.map(v => `<option value="${e(v.name)}" ${v.name === settings.voiceName ? 'selected' : ''}>${e(v.name)}${v.localService ? '' : ' (needs internet)'}</option>`).join('')}
       </select></label>` : ''}
       <label class="field setting"><span>Speaking speed: <output id="rate-out">${settings.rate}</output></span>
         <input type="range" id="rate" min="0.6" max="1.2" step="0.05" value="${settings.rate}" style="width:100%"></label>
