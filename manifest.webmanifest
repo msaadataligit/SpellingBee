@@ -1,0 +1,9 @@
+{
+  "name": "Bee Ready – Spelling Bee Practice",
+  "short_name": "Bee Ready",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fffaf0",
+  "theme_color": "#ffc93c",
+  "icons": [{ "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
